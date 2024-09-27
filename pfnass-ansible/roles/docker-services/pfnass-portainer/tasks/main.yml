@@ -1,0 +1,21 @@
+---
+- name: Pull Portainer Docker Image
+  docker_image: 
+    name: portainer/portainer-ce:latest
+    state: present
+
+- name: Build and Run Portainer Container
+  docker_container:
+    name: portainer
+    image: portainer/portainer-ce
+    purge_networks: yes
+    keep_volumes: true
+    networks:
+      - name: "{{ PROXY_NETWORK }}"
+    pull: no
+    restart_policy: unless-stopped
+    ports:
+    - "{{ PORTAINER_PORTS }}"
+    volumes:
+    - "{{ DOCKER_SOCK_PATH }}:/var/run/docker.sock"
+    - "{{ PORTAINER_PATH }}/portainer_data:/data"

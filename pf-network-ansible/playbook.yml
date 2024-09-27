@@ -1,0 +1,6 @@
+# ---
+- name: PF-Router-Configurations
+  hosts: pf_router_ansible
+  roles:
+  - roles/ansible_openwrtsystem
+  - roles/ansible_openwrtdropbear

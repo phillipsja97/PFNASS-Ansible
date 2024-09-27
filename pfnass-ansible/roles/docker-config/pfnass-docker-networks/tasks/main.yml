@@ -1,0 +1,20 @@
+---
+- name: Create Plex Network
+  docker_network:
+    name: "{{ PLEX_NETWORK }}"
+    driver: "{{ PLEX_NETWORK_DRIVER }}"
+    state: present
+    ipam_config:
+    - subnet: "{{ PLEX_SUBNET }}"
+      gateway: "{{ PLEX_GATEWAY }}"
+      iprange: "{{ PLEX_IPRANGE }}"
+
+- name: Create Proxy Network
+  docker_network:
+    name: "{{ PROXY_NETWORK }}"
+    driver: "{{ PROXY_DRIVER }}"
+    state: present
+    ipam_config:
+    - subnet: "{{ PROXY_SUBNET }}"
+      gateway: "{{ PROXY_GATEWAY }}"
+      iprange: "{{ PROXY_IPRANGE }}"

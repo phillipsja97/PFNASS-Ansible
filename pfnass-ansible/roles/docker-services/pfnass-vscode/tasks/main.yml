@@ -1,0 +1,26 @@
+---
+- name: Pull Code-Server Docker Image
+  docker_image: 
+    name: lscr.io/linuxserver/code-server:latest
+    state: present
+
+- name: Start Code-Server Container
+  docker_container:
+    name: code-server
+    image: lscr.io/linuxserver/code-server:latest
+    purge_networks: yes
+    keep_volumes: true
+    networks:
+      - name: "{{ PROXY_NETWORK }}"
+    pull: no
+    restart_policy: unless-stopped
+    env:
+      PUID: "{{ PUID }}"
+      PGID: "{{ PGID }}"
+      TZ: America/Chicago
+      PASSWORD: "{{ PASSWORD }}"
+      DEFAULT_WORKSPACE: "{{ WORKSPACE }}"
+    volumes:
+      - "{{ CODE_SERVER_PATH }}/config:/config"
+    ports:
+      "{{ CODE_SERVER_PORTS }}"

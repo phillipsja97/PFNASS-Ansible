@@ -1,0 +1,8 @@
+# Ignore PF-Network Variable files and hosts
+pf-network-ansible/roles/*/vars/main.yml
+pf-network-ansible/roles/ansible_openwrtsystem/vars/main.yml
+pf-network-ansible/inventory.ini
+
+# Ignore PFNASS-Ansible Variable files and hosts
+pfnass-ansible/roles/*/*/vars/main.yml
+pfnass-ansible/inventory/

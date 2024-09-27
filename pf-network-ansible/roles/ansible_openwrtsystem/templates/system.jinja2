@@ -1,0 +1,4 @@
+config system 'system'
+        # Configuration distributed by Ansible
+        # Basic Node configuration
+        option hostname "{{ openwrt_system_hostname | default('OpenWrt', true) }}"

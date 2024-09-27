@@ -1,0 +1,25 @@
+---
+- name: Pull VaultWarden Docker Image
+  docker_image: 
+    name: vaultwarden/server:latest
+    state: present
+
+- name: Start VaultWarden Container
+  docker_container:
+    name: vaultwarden
+    image: vaultwarden/server:latest
+    purge_networks: yes
+    keep_volumes: true
+    networks:
+      - name: "{{ PROXY_NETWORK }}"
+    pull: no
+    restart_policy: unless-stopped
+    env:
+      # ADMIN_TOKEN: "{{ ADMIN_TOKEN }}"
+      # WEBSOCKET_ENABLED: "true"
+      SIGNUPS_ALLOWED: "false"
+      DOMAIN: "{{ DOMAIN }}"
+    volumes:
+     - "{{ VW_PATH }}:/data:rw"
+    ports:
+      "{{ VW_PORT }}"

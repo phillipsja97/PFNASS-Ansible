@@ -1,0 +1,26 @@
+---
+- name: Pull MySQL Database Image
+  docker_image:
+    name: gitea/gitea:latest
+    state: present
+
+- name: Build and Run MySQL Database Container
+  docker_container:
+    name: mysql
+    purge_networks: yes
+    keep_volumes: true
+    image: mysql:8
+    hostname: mysql
+    networks:
+    - name: "{{ PROXY_NETWORK }}"
+    pull: no
+    restart_policy: unless-stopped
+    env:
+      MYSQL_ROOT_PASSWORD: "{{ DB_ROOT_PASS }}"
+      MYSQL_USER: "{{ DB_USER }}"
+      MYSQL_PASSWORD: "{{ DB_PASS }}"
+      MYSQL_DATABASE: "{{ DB_NAME }}"
+    volumes:
+    - "{{ MYSQL_PATH }}:/var/lib/mysql"
+    ports:
+      "{{ MYSQL_PORTS }}"
