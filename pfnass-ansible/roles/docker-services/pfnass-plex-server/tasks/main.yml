@@ -3,6 +3,8 @@
   docker_image: 
     name: lscr.io/linuxserver/jackett:latest
     state: present
+    source: pull
+
 - name: Start Jackett Docker Container
   docker_container:
     name: jackett
@@ -10,7 +12,7 @@
     purge_networks: yes
     keep_volumes: true
     networks:
-      - name: "{{ PROXY_NETWORK }}"
+      - name: "{{ PLEX_NETWORK }}"
     pull: no
     restart_policy: unless-stopped
     env:
@@ -26,6 +28,7 @@
   docker_image: 
     name: lscr.io/linuxserver/overseerr:latest
     state: present
+    source: pull
 
 - name: Start Overseerr Docker Container
   docker_container:
@@ -34,7 +37,7 @@
     purge_networks: yes
     keep_volumes: true
     networks:
-      - name: "{{ PROXY_NETWORK }}"
+      - name: "{{ PLEX_NETWORK }}"
     pull: no
     restart_policy: unless-stopped
     env:
@@ -50,6 +53,7 @@
   docker_image: 
     name: iampuid0/pd_zurg:latest
     state: present
+    source: pull
 
 - name: Start PD_ZURG Docker Container
   docker_container:
@@ -58,7 +62,7 @@
     purge_networks: yes
     keep_volumes: true
     networks:
-      - name: "{{ PROXY_NETWORK }}"
+      - name: "{{ PLEX_NETWORK }}"
     pull: no
     restart_policy: unless-stopped
     env:
@@ -142,6 +146,7 @@
   docker_image: 
     name: ghcr.io/linuxserver/plex
     state: present
+    source: pull
 
 - name: Start Plex Docker Container
   docker_container:
@@ -150,7 +155,7 @@
     purge_networks: yes
     keep_volumes: true
     networks:
-      - name: "{{ PROXY_NETWORK }}"
+      - name: "{{ PLEX_NETWORK }}"
     pull: no
     restart_policy: unless-stopped
     env:

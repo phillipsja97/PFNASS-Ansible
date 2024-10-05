@@ -6,4 +6,4 @@
 
 # To run pfnass-ansible from root project directory
 
-`ansible-playbook -u root -i pfnss-ansible/inventory.yml -p pfnss-ansible/playbook.yml`
+`ansible-playbook -u root -i pfnass-ansible/inventory.yml pfnass-ansible/playbook.yml`

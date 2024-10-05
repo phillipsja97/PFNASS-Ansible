@@ -3,6 +3,7 @@
   docker_image: 
     name: jellyfin/jellyfin
     state: present
+    source: pull
 
 - name: Start Jellyfin Container
   docker_container:

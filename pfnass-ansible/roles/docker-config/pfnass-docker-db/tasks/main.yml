@@ -1,26 +1,51 @@
 ---
-- name: Pull MySQL Database Image
-  docker_image:
-    name: gitea/gitea:latest
-    state: present
+# - name: Pull MySQL Database Image
+#   docker_image:
+#     name: gitea/gitea:latest
+#     state: present
 
-- name: Build and Run MySQL Database Container
+# - name: Build and Run MySQL Database Container
+#   docker_container:
+#     name: mysql
+#     purge_networks: yes
+#     keep_volumes: true
+#     image: mysql:8
+#     hostname: mysql
+#     networks:
+#     - name: "{{ PROXY_NETWORK }}"
+#     pull: no
+#     restart_policy: unless-stopped
+#     env:
+#       MYSQL_ROOT_PASSWORD: "{{ DB_ROOT_PASS }}"
+#       MYSQL_USER: "{{ DB_USER }}"
+#       MYSQL_PASSWORD: "{{ DB_PASS }}"
+#       MYSQL_DATABASE: "{{ DB_NAME }}"
+#     volumes:
+#     - "{{ MYSQL_PATH }}:/var/lib/mysql"
+#     ports:
+#       "{{ MYSQL_PORTS }}"
+
+- name: Pull Postgres Database Image
+  docker_image:
+    name: postgres:15
+    source: pull
+    pull:
+      platform: arm64
+
+- name: Run Postgres Database Container
   docker_container:
-    name: mysql
-    purge_networks: yes
-    keep_volumes: true
-    image: mysql:8
-    hostname: mysql
+    name: postgres
+    image: postgres:15
     networks:
-    - name: "{{ PROXY_NETWORK }}"
-    pull: no
+    - name: "{{ MEALIE_NETWORK }}"
     restart_policy: unless-stopped
+    healthcheck:
+      test: ["CMD", "pg_isready"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
     env:
-      MYSQL_ROOT_PASSWORD: "{{ DB_ROOT_PASS }}"
-      MYSQL_USER: "{{ DB_USER }}"
-      MYSQL_PASSWORD: "{{ DB_PASS }}"
-      MYSQL_DATABASE: "{{ DB_NAME }}"
+      POSTGRES_PASSWORD: mealie
+      POSTGRES_USER: mealie
     volumes:
-    - "{{ MYSQL_PATH }}:/var/lib/mysql"
-    ports:
-      "{{ MYSQL_PORTS }}"
+    - "{{ POSTGRES_VOLUME_PATH }}:/var/lib/postgresql/data"
