@@ -2,13 +2,13 @@
 - hosts: PF_NASS
   roles:
     - roles/docker-config/pfnass-docker-networks
-    # - roles/docker-config/pfnass-docker-db
-    # - roles/docker-config/pfnass-caddyscale-proxy
-    # - roles/docker-services/pfnass-portainer
-    # - roles/docker-services/pfnass-gitea
+    - roles/docker-config/pfnass-docker-db
+    - roles/docker-config/pfnass-caddyscale-proxy
+    - roles/docker-services/pfnass-portainer
+    - roles/docker-services/pfnass-gitea
     - roles/docker-services/pfnass-plex-server
-    # - roles/docker-services/pfnass-vscode
-    # - roles/docker-services/pfnass-vaultwarden
-    # - roles/docker-services/pfnass-jellyfin
-    # - roles/docker-services/pfnass-mealie
+    - roles/docker-services/pfnass-vscode
+    - roles/docker-services/pfnass-vaultwarden
+    - roles/docker-services/pfnass-jellyfin
+    - roles/docker-services/pfnass-mealie
   become: yes

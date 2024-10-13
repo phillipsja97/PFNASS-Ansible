@@ -3,6 +3,7 @@
   docker_image: 
     name: tailscale/tailscale:latest
     state: present
+    source: pull
 
 - name: Build and Run Tailscale Container
   docker_container:
@@ -24,7 +25,7 @@
         TS_SOCKET: "{{ TS_SOCKET }}"
     volumes:
       - /dev/net/tun:/dev/net/tun
-      - "{{ TAILSCALE_PATH }}/varlib:/var/lib"
+      - "{{ TAILSCALE_PATH }}/var/lib/tailscale:/var/lib/tailscale"
       - "{{ TAILSCALE_PATH }}/tmp:/tmp"
 
 - name: Build Caddy Proxy Image
@@ -33,6 +34,7 @@
       path: "{{ CADDY_PATH }}"
     name: caddy-local
     state: present
+    source: pull
 
 - name: Run Caddy Proxy Container
   docker_container:

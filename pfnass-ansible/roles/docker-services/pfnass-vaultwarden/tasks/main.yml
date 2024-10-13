@@ -3,6 +3,7 @@
   docker_image: 
     name: vaultwarden/server:latest
     state: present
+    source: pull
 
 - name: Start VaultWarden Container
   docker_container:
