@@ -1,0 +1,7 @@
+PF_CONFIG:
+  hosts:
+    PF_NASS:
+      ansible_host: 
+      ansible_user: phillips-admin
+      ansible_python_interpreter: /volume1/\@appstore/Python3.9/usr/bin/python3
+      ansible_port: 

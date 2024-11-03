@@ -1,0 +1,54 @@
+---
+- name: Pull Tailscale Docker Image
+  docker_image: 
+    name: tailscale/tailscale:latest
+    state: present
+    source: pull
+- name: Build and Run Traefik
+  docker-container:
+    name: traefik-tailscale-proxy
+    image: "traefik:v3.1"
+    network_mode: service:tailscale-proxy
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.myresolver.acme.email={{ ACME_EMAIL }}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    environment:
+      - CF_DNS_API_TOKEN: "{{ CLOUDFLARE_API_TOKEN }}"
+    volumes:
+      - "/volume1/docker/traefik-tailscale/letsencrypt:/letsencrypt"
+      - "/volume1/docker/docker.sock:/var/run/docker.sock:ro"
+
+- name: Pull Tailscale Docker Image
+  docker_image: 
+    name: tailscale/tailscale:latest
+    state: present
+    source: pull
+
+- name: Build and Run Tailscale Container
+  docker_container:
+    name: tailscaled
+    image: tailscale/tailscale
+    keep_volumes: true
+    networks:
+      - name: "{{ TRAPROXY-NETWORK }}"
+    pull: no
+    restart_policy: unless-stopped
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    env:
+        TS_STATE_DIR: "{{ TS_STATE_DIR }}"
+        TS_AUTH_KEY: "{{ TS_AUTH_KEY }}"
+        TS_EXTRA_ARGS: "{{ TS_EXTRA_ARGS }}"
+        TS_SOCKET: "{{ TS_SOCKET }}"
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - "{{ TAILSCALE_PATH }}/var/lib/tailscale:/var/lib/tailscale"
+      - "{{ TAILSCALE_PATH }}/tmp:/tmp"

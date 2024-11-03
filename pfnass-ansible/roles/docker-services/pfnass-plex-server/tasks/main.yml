@@ -59,7 +59,6 @@
   docker_container:
     name: PD_ZURG
     image: iampuid0/pd_zurg:latest
-    purge_networks: yes
     keep_volumes: true
     networks:
       - name: "{{ PLEX_NETWORK }}"
@@ -77,7 +76,7 @@
      # ZURG_VERSION=v0.9.2-hotfix.4
       ZURG_UPDATE: "true"
       PLEX_REFRESH: "true"
-      PLEX_MOUNT_DIR: "{{ PLEX_MEDIA_PATH }}/mnt/pd_zurg"
+      PLEX_MOUNT_DIR: "{{ PLEX_MEDIA_PATH }}/config:data:rshared"
       ZURG_USER: "{{ ZURG_USER }}"
       ZURG_PASS: "{{ ZURG_PASS }}"
       ZURG_PORT: "{{ ZURG_PORT }}"
@@ -86,7 +85,7 @@
      # Rclone Optional Settings See rclone docs for full list
      # NFS_ENABLED=true
      # NFS_PORT=8000
-      RCLONE_LOG_LEVEL: INFO
+      RCLONE_LOG_LEVEL: DEBUG
      # RCLONE_CACHE_DIR=/cache
      # RCLONE_DIR_CACHE_TIME=10s
      # RCLONE_VFS_CACHE_MODE=full
@@ -107,7 +106,7 @@
      # - JF_ADDRESS
      # - JF_API_KEY
       ## Plex Debrid Optional Settings
-      PD_UPDATE: "true"
+      PD_UPDATE: "false"
       SHOW_MENU: "false"
       SEERR_API_KEY: "{{ SEERR_API_KEY }}"
       SEERR_ADDRESS: "{{ SEERR_ADDRESS }}"
@@ -115,7 +114,7 @@
      # - AUTO_UPDATE_INTERVAL=12
      # - DUPLICATE_CLEANUP=true
      # - CLEANUP_INTERVAL=1
-      PD_LOG_LEVEL: DEBUG
+      PD_LOG_LEVEL: INFO
      # - PDZURG_LOG_COUNT=2
     # Example to attach to gluetun vpn container if realdebrid blocks IP address 
     # network_mode: container:gluetun  
@@ -131,9 +130,7 @@
       ## Location for Zurg AllDebrid active configuration -- when supported by Zurg     
       ##- "{{ PLEX_MEDIA_PATH }}/AD:/zurg/AD   
       ## Location for rclone mount to host
-      - "{{ PLEX_MEDIA_PATH }}/mnt:/data:shared"
-      # - "{{ PLEX_MEDIA_PATH }}/RD/plex_update.sh"
-      # - "{{ PLEX_MEDIA_PATH }}/RD/plex_refresh.sh"
+      - "{{ PLEX_MEDIA_PATH }}/config:/data:shared"
     devices:
       - /dev/fuse:/dev/fuse:rwm
     capabilities:
@@ -153,7 +150,6 @@
     name: plex
     image: ghcr.io/linuxserver/plex
     purge_networks: yes
-    keep_volumes: true
     networks:
       - name: "{{ PLEX_NETWORK }}"
     pull: no
@@ -166,6 +162,6 @@
     volumes:
       - "{{ PLEX_MEDIA_PATH }}/config:/config"
       - /dev/shm:/transcode
-      - "{{ PLEX_MEDIA_PATH }}/mnt/pd_zurg:/pd_zurg"
+      - "{{ PLEX_MEDIA_PATH }}/config:/rclone"
     ports:
       "{{ PLEX_PORT }}"
