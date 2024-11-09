@@ -5,6 +5,7 @@ pf-network-ansible/inventory.ini
 
 # Ignore PFNASS-Ansible Variable files and hosts
 pfnass-ansible/roles/*/*/vars/main.yml
+pfnass-ansible/roles/*/vars/main.yml
 pfnass-ansible/inventory/
 
 # ansible-network-examples

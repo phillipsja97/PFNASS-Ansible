@@ -1,0 +1,76 @@
+---
+- name: Pull Tailscale Docker Image
+  community.docker.docker_image:
+    name: tailscale/tailscale:stable
+    state: present
+    source: pull
+  tags:
+    - docker
+    - image
+    - tailscale
+    - proxy
+
+- name: Build and Run Tailscale Container
+  community.docker.docker_container:
+    name: tailscaled
+    image: tailscale/tailscale:stable
+    hostname: traefik-proxy
+    keep_volumes: true
+    networks:
+      - name: "{{ proxy_network }}"
+    pull: false
+    restart_policy: unless-stopped
+    capabilities:
+      - NET_ADMIN
+      - NET_RAW
+    env:
+      TS_STATE_DIR: "{{ ts_state_dir }}"
+      TS_AUTH_KEY: "{{ ts_auth_key }}"
+      TS_EXTRA_ARGS: "{{ ts_extra_args }}"
+      TS_SOCKET: "{{ ts_socket }}"
+    volumes:
+      - /dev/net/tun:/dev/net/tun
+      - "{{ tailscale_path }}/var/lib/tailscale:/var/lib/tailscale"
+      - "{{ tailscale_path }}/tmp:/tmp"
+  tags:
+    - docker
+    - container
+    - tailscale
+    - proxy
+
+- name: Pull Traefik Docker Image
+  community.docker.docker_image:
+    name: traefik:v3.1
+    state: present
+    source: pull
+  tags:
+    - docker
+    - image
+    - traefik
+    - proxy
+
+- name: Build and Run Traefik
+  community.docker.docker_container:
+    name: traefik-tailscale-proxy
+    image: "traefik:v3.1"
+    network_mode: container:tailscaled
+    command:
+      - "--api.insecure=true"
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.websecure.address=:443"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
+      - "--certificatesresolvers.myresolver.acme.email={{ acme_email }}"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    env:
+      CF_DNS_API_TOKEN: "{{ cloudflare_api_token }}"
+    volumes:
+      - "/volume1/docker/traefik-tailscale/letsencrypt:/letsencrypt"
+      - "/volume1/docker/docker.sock:/var/run/docker.sock:ro"
+  tags:
+    - docker
+    - container
+    - traefix
+    - proxy

@@ -26,26 +26,32 @@
 #       "{{ MYSQL_PORTS }}"
 
 - name: Pull Postgres Database Image
-  docker_image:
+  community.docker.docker_image:
     name: postgres:15
     source: pull
     pull:
       platform: arm64
+  tags:
+    - docker
+    - image
+    - postgres
 
 - name: Run Postgres Database Container
-  docker_container:
+  community.docker.docker_container:
     name: postgres
-    image: postgres:15
+    image: postgres:latest
     networks:
-    - name: "{{ MEALIE_NETWORK }}"
+      - name: "{{ proxy_network }}"
     restart_policy: unless-stopped
-    healthcheck:
-      test: ["CMD", "pg_isready"]
-      interval: 30s
-      timeout: 20s
-      retries: 3
+    ports:
+      - "{{ postgres_ports }}"
     env:
-      POSTGRES_PASSWORD: mealie
-      POSTGRES_USER: mealie
+      POSTGRES_PASSWORD: "{{ postgres_password }}"
+      POSTGRES_USER: "{{ postgres_user }}"
     volumes:
-    - "{{ POSTGRES_VOLUME_PATH }}:/var/lib/postgresql/data"
+      - "{{ postgres_volume_path }}/data:/var/lib/postgresql/data"
+      - "{{ postgres_volume_path }}/init_multi_db.sh:/docker-entrypoint-initdb.d/init_multi_db.sh"
+  tags:
+    - docker
+    - container
+    - postgres

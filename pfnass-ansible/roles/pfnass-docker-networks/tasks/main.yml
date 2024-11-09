@@ -1,0 +1,27 @@
+---
+- name: Create Plex Network
+  community.docker.docker_network:
+    name: "{{ plex_network }}"
+    driver: "{{ plex_network_driver }}"
+    state: present
+    ipam_config:
+      - subnet: "{{ plex_subnet }}"
+        gateway: "{{ plex_gateway }}"
+        iprange: "{{ plex_iprange }}"
+  tags:
+    - docker
+    - networks
+    - plex
+- name: Create Proxy Network
+  community.docker.docker_network:
+    name: "{{ proxy_network }}"
+    driver: "{{ proxy_driver }}"
+    state: present
+    ipam_config:
+      - subnet: "{{ proxy_subnet }}"
+        gateway: "{{ proxy_gateway }}"
+        iprange: "{{ proxy_iprange }}"
+  tags:
+    - docker
+    - networks
+    - proxy
