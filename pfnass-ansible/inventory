@@ -1,0 +1,23 @@
+[pfnass]
+{{ ip }} -- not actual variables
+
+[pfrps]
+{{ ip }} -- not actual variables
+
+[pf_router]
+{{ ip }} -- not actual variables
+
+[pfnass:vars]
+ansible_user{{ user }} {{ ip }} -- not actual variables
+ansible_python_interpreter=/usr/bin/python3
+ansible_port=97
+
+[pfrps:vars]
+ansible_user{{ user }} -- not actual variables
+ansible_python_interpreter=/usr/bin/python3
+ansible_port={{ port }} -- not actual variables
+
+[pf_router:vars]
+ansible_user{{ user }} -- not actual variables
+ansible_python_interpreter=/usr/bin/python3
+ansible_port={{ port }} -- not actual variables

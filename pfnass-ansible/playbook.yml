@@ -1,24 +1,21 @@
 ---
 - name: Build All Docker Containers
   hosts: pfnass
-  # tags: [docker]
   roles:
-    # - roles/docker-config/pfnass-docker-networks
-    # - pfnass-traefik-tailscale-proxy
+    - pfnass-docker-networks
+    - pfnass-traefik-tailscale-proxy
     - pfnass-docker-db
-    # - roles/docker-services/pfnass-portainer
-    # - roles/docker-services/pfnass-gitea
-    # - roles/docker-services/pfnass-plex-server
-    # - roles/docker-services/pfnass-vscode
-    # - roles/docker-services/pfnass-vaultwarden
-    # - pfnass-jellyfin
+    - pfnass-plex-server
+    - pfnass-vscode
+    - pfnass-vaultwarden
+    - pfnass-jellyfin
     - pfnass-mealie
   become: true
 
-- name: Define Docker Networks and Tailscale + Proxy
-  hosts: pfnass
-  # tags: [networks]
-  roles:
-    - pfnass-docker-networks
-    # - pfnass-traefik-tailscale-proxy
-  become: true
+# - name: Define Docker Networks and Tailscale + Proxy
+#   hosts: pfnass
+#   # tags: [networks]
+#   roles:
+#     - pfnass-docker-networks
+#     - pfnass-traefik-tailscale-proxy
+#   become: true

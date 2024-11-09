@@ -1,0 +1,39 @@
+---
+- name: Pull Code-Server Docker Image
+  community.docker.docker_image:
+    name: lscr.io/linuxserver/code-server:latest
+    state: present
+    source: pull
+  tags:
+    - docker
+    - image
+    - code
+
+- name: Start Code-Server Container
+  community.docker.docker_container:
+    name: code-server
+    image: lscr.io/linuxserver/code-server:latest
+    keep_volumes: true
+    networks:
+      - name: "{{ proxy_network }}"
+    pull: false
+    restart_policy: unless-stopped
+    env:
+      PUID: "{{ puid }}"
+      PGID: "{{ pgid }}"
+      TZ: America/Chicago
+      PASSWORD: "{{ password }}"
+      DEFAULT_WORKSPACE: "{{ workspace }}"
+    volumes:
+      - "{{ code_server_path }}/config:/config"
+    ports:
+      "{{ code_server_ports }}"
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.codeserver.rule: Host(`codeserver.pfnass.online`)
+      traefik.http.routers.codeserver.entrypoints: websecure
+      traefik.http.routers.codeserver.tls.certresolver: myresolver
+  tags:
+    - docker
+    - container
+    - code
