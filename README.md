@@ -10,4 +10,4 @@
 
 # Optionally, can also run only specific tags, or multiple tags
 
-`ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbook.yml --tags "insert tag here"`
+`ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbook.yml --tags "insert tag here,multiple tags are comma separated"`
