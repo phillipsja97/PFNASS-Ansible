@@ -36,4 +36,4 @@ jobs:
           ANSIBLE_USER: ${{ inputs.USER }}
           ANSIBLE_HOST_KEY_CHECKING: False
         run: |
-          ansible-playbook -i inventory/inventory playbooks/playbook.yml --private-key private_key.pem -u ${{ secrets.ANSIBLE_USER }} --tags="{{ inputs.tags }}"
+          ansible-playbook -i inventory/inventory playbooks/playbook.yml --private-key private_key.pem -u ${{ secrets.USER }} --tags="{{ inputs.TAGS }}"
