@@ -9,4 +9,7 @@ pfnass-ansible/roles/*/vars/main.yml
 pfnass-ansible/inventory/
 pfnass-ansible/.vault_pass
 
+
 # ansible-network-examples
+
+.vscode
