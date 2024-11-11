@@ -1,0 +1,101 @@
+---
+- name: Build All Docker Images
+  hosts: pfnass
+  tasks:
+    - name: Pull Tailscale Docker Image
+      community.docker.docker_image:
+        name: tailscale/tailscale:stable
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - tailscale
+        - proxy
+    - name: Pull Traefik Docker Image
+      community.docker.docker_image:
+        name: traefik:v3.1
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - traefik
+        - proxy
+    - name: Pull Image For Code Code-Server
+      community.docker.docker_image:
+        name: lscr.io/linuxserver/code-server:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - code
+    - name: Pull VaultWarden Docker Image
+      community.docker.docker_image:
+        name: vaultwarden/server:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - vault
+    - name: Pull Jacket Docker Image
+      community.docker.docker_image:
+        name: lscr.io/linuxserver/jackett:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - plex_server
+        - jackett
+    - name: Pull Overseerr Docker Image
+      community.docker.docker_image:
+        name: lscr.io/linuxserver/overseerr:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - plex_server
+        - overseerr
+    - name: Pull PD_ZURG Docker Image
+      community.docker.docker_image:
+        name: iampuid0/pd_zurg:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - plex_server
+        - pd_zurg
+    - name: Pull Plex Docker Image
+      community.docker.docker_image:
+        name: ghcr.io/linuxserver/plex
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - plex_server
+        - plex
+    - name: Pull Mealie Docker Image
+      community.docker.docker_image:
+        name: ghcr.io/mealie-recipes/mealie:latest
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - mealie
+    - name: Pull Jellyfin Docker Image
+      community.docker.docker_image:
+        name: jellyfin/jellyfin
+        state: present
+        source: pull
+      tags:
+        - docker
+        - image
+        - jellyfin
+  become: true

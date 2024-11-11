@@ -1,0 +1,333 @@
+---
+- name: Build All Docker Containers
+  hosts: pfnass
+  vars_files:
+    - "./vars/docker_containers"
+  tasks:
+    - name: Run Postgres Database Container
+      community.docker.docker_container:
+        name: postgres
+        image: postgres:latest
+        networks:
+          - name: "{{ proxy_network }}"
+        restart_policy: unless-stopped
+        ports:
+          - "{{ postgres_ports }}"
+        env:
+          POSTGRES_PASSWORD: "{{ postgres_password }}"
+          POSTGRES_USER: "{{ postgres_user }}"
+        volumes:
+          - "{{ postgres_volume_path }}/data:/var/lib/postgresql/data"
+          - "{{ postgres_volume_path }}/init_multi_db.sh:/docker-entrypoint-initdb.d/init_multi_db.sh"
+      tags:
+        - docker
+        - container
+        - postgres
+    - name: Build and Run Tailscale Container
+      community.docker.docker_container:
+        name: tailscaled
+        image: tailscale/tailscale:stable
+        hostname: traefik-proxy
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        capabilities:
+          - NET_ADMIN
+          - NET_RAW
+        env:
+          TS_STATE_DIR: "{{ ts_state_dir }}"
+          TS_AUTH_KEY: "{{ ts_auth_key }}"
+          TS_EXTRA_ARGS: "{{ ts_extra_args }}"
+          TS_SOCKET: "{{ ts_socket }}"
+        volumes:
+          - /dev/net/tun:/dev/net/tun
+          - "{{ tailscale_path }}/var/lib/tailscale:/var/lib/tailscale"
+          - "{{ tailscale_path }}/tmp:/tmp"
+      tags:
+        - docker
+        - container
+        - tailscale
+        - proxy
+    - name: Build and Run Traefik
+      community.docker.docker_container:
+        name: traefik-tailscale-proxy
+        image: "traefik:v3.1"
+        network_mode: container:tailscaled
+        command:
+          - "--api.insecure=true"
+          - "--providers.docker=true"
+          - "--providers.docker.exposedbydefault=false"
+          - "--entryPoints.web.address=:80"
+          - "--entryPoints.websecure.address=:443"
+          - "--certificatesresolvers.myresolver.acme.dnschallenge=true"
+          - "--certificatesresolvers.myresolver.acme.dnschallenge.provider=cloudflare"
+          - "--certificatesresolvers.myresolver.acme.email={{ acme_email }}"
+          - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+        env:
+          CF_DNS_API_TOKEN: "{{ cloudflare_api_token }}"
+        volumes:
+          - "/volume1/docker/traefik-tailscale/letsencrypt:/letsencrypt"
+          - "/volume1/docker/docker.sock:/var/run/docker.sock:ro"
+      tags:
+        - docker
+        - container
+        - traefix
+        - proxy
+    - name: Start Code-Server Container
+      community.docker.docker_container:
+        name: code-server
+        image: lscr.io/linuxserver/code-server:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+          PASSWORD: "{{ password }}"
+          DEFAULT_WORKSPACE: "{{ workspace }}"
+        volumes:
+          - "{{ code_server_path }}/config:/config"
+        ports:
+          "{{ code_server_ports }}"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.codeserver.rule: Host(`codeserver.pfnass.online`)
+          traefik.http.routers.codeserver.entrypoints: websecure
+          traefik.http.routers.codeserver.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - code
+    - name: Start VaultWarden Container
+      community.docker.docker_container:
+        name: vaultwarden
+        image: vaultwarden/server:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          # ADMIN_TOKEN: "{{ ADMIN_TOKEN }}"
+          # WEBSOCKET_ENABLED: "true"
+          SIGNUPS_ALLOWED: "false"
+          DOMAIN: "{{ vw_domain }}"
+        volumes:
+          - "{{ vw_path }}:/data:rw"
+        ports:
+          "{{ vw_port }}"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.warden.rule: Host(`warden.pfnass.online`)
+          traefik.http.routers.warden.entrypoints: websecure
+          traefik.http.routers.warden.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - vault
+    - name: Start Jackett Docker Container
+      community.docker.docker_container:
+        name: jackett
+        image: lscr.io/linuxserver/jackett:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ PLEX_NETWORK }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+        volumes:
+          - "{{ jackett_path }}/config:/config"
+        ports:
+          "{{ jackett_port }}"
+    - name: Start Overseerr Docker Container
+      community.docker.docker_container:
+        name: overseerr
+        image: lscr.io/linuxserver/overseerr:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ PLEX_NETWORK }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+        volumes:
+          - "{{ overseerr_path }}/config:/config"
+        ports:
+          "{{ overseerr_ports }}"
+    - name: Start PD_ZURG Docker Container
+      community.docker.docker_container:
+        name: PD_ZURG
+        image: iampuid0/pd_zurg:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ plex_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+        # Zurg Required Settings
+          ZURG_ENABLED: "true"
+          RD_API_KEY: "{{ rd_key }}"
+        # Zurg Optional Settings
+          ZURG_LOG_LEVEL: INFO
+        # ZURG_VERSION=v0.9.2-hotfix.4
+          ZURG_UPDATE: "true"
+          PLEX_REFRESH: "true"
+          PLEX_MOUNT_DIR: "{{ plex_media_path }}/config:data:rshared"
+          ZURG_USER: "{{ zurg_user }}"
+          ZURG_PASS: "{{ zurg_pass }}"
+          ZURG_PORT: "{{ zurg_port }}"
+        ## Rclone Required Settings
+          RCLONE_MOUNT_NAME: pd_zurg
+        # Rclone Optional Settings See rclone docs for full list
+        # NFS_ENABLED=true
+        # NFS_PORT=8000
+          RCLONE_LOG_LEVEL: DEBUG
+        # RCLONE_CACHE_DIR=/cache
+        # RCLONE_DIR_CACHE_TIME=10s
+        # RCLONE_VFS_CACHE_MODE=full
+        # RCLONE_VFS_CACHE_MAX_SIZE=100G
+        # RCLONE_ATTR_TIMEOUT=8700h
+        # RCLONE_BUFFER_SIZE=32M
+        # RCLONE_VFS_CACHE_MAX_AGE=4h
+        # RCLONE_VFS_READ_CHUNK_SIZE=32M
+        # RCLONE_VFS_READ_CHUNK_SIZE_LIMIT=1G
+        # RCLONE_TRANSFERS=8
+        ## Plex Debrid Required Settings
+          PD_ENABLED: "true"
+          ## To utilize plex_debrid with Plex, the following environment variables are required
+          PLEX_USER: "{{ plex_user }}"
+          PLEX_TOKEN: "{{ plex_token }}"
+          PLEX_ADDRESS: "{{ plex_address }}"
+          ## Plex Debrid Optional Settings
+          PD_UPDATE: "false"
+          SHOW_MENU: "false"
+          SEERR_API_KEY: "{{ seerr_api_key }}"
+          SEERR_ADDRESS: "{{ seerr_address }}"
+          ## Special Features
+        # - AUTO_UPDATE_INTERVAL=12
+        # - DUPLICATE_CLEANUP=true
+        # - CLEANUP_INTERVAL=1
+          PD_LOG_LEVEL: INFO
+        # - PDZURG_LOG_COUNT=2
+        # Example to attach to gluetun vpn container if realdebrid blocks IP address
+        # network_mode: container:gluetun
+        volumes:
+          ## Location of configuration files. If a Zurg config.yml and/or Zurg app is placed here, it will be used to override the default configuration
+          - "{{ plex_media_path }}/config:/config"
+          ## Location for logs
+          - "{{ plex_media_path }}/log:/log"
+          ## Location for rclone cache if enabled
+          - "{{ plex_media_path }}/cache:/cache"
+          ## Location for Zurg RealDebrid active configuration
+          - "{{ plex_media_path }}/RD:/zurg/RD"
+          ## Location for Zurg AllDebrid active configuration -- when supported by Zurg
+          # - "{{ plex_media_path }}/AD:/zurg/AD
+          ## Location for rclone mount to host
+          - "{{ plex_media_path }}/config:/data:shared"
+        devices:
+          - /dev/fuse:/dev/fuse:rwm
+        capabilities:
+          - SYS_ADMIN
+        security_opts:
+          - apparmor:unconfined
+          - no-new-privileges
+    - name: Start Plex Docker Container
+      community.docker.docker_container:
+        name: plex
+        image: ghcr.io/linuxserver/plex
+        networks:
+          - name: "{{ plex_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+          VERSION: docker
+        volumes:
+          - "{{ plex_media_path }}/config:/config"
+          - /dev/shm:/transcode
+          - "{{ plex_media_path }}/config:/rclone"
+        ports:
+          "{{ plex_port }}"
+    - name: Run Mealie Container
+      community.docker.docker_container:
+        name: mealie
+        image: ghcr.io/mealie-recipes/mealie:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          USER_UID: "{{ user_uid }}"
+          USER_GID: "{{ user_gid }}"
+          ALLOW_SIGNUP: "false"
+          TZ: America/Chicago
+          BASE_URL: "{{ base_url }}"
+          # Database Settings
+          DB_ENGINE: postgres
+          POSTGRES_USER: pfnass
+          POSTGRES_PASSWORD: "{{ db_pass }}"
+          POSTGRES_SERVER: "192.168.1.189"
+          POSTGRES_PORT: "5433"
+          POSTGRES_DB: mealie
+        volumes:
+          - "{{ mealie_volume_path }}/data:/app/data/"
+        ports:
+          - "{{ mealie_ports }}"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.mealie.rule: Host(`mealie.pfnass.online`)
+          traefik.http.routers.mealie.entrypoints: websecure
+          traefik.http.routers.mealie.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - mealie
+    - name: Start Jellyfin Container
+      community.docker.docker_container:
+        name: jellyfin
+        image: jellyfin/jellyfin
+        purge_networks: true
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          TZ: America/Chicago
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        volumes:
+          - "{{ jellyfin_path }}/config:/config"
+          - "{{ jellyfin_path }}/cache:/cache"
+          - "{{ jellyfin_media }}:/Media"
+        ports:
+          "{{ jellyfin_port }}"
+        devices:
+          - /dev/dri/renderD128:/dev/dri/renderD128
+          - /dev/dri/card0:/dev/dri/card0
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.jellyfin.rule: Host(`jellyfin.pfnass.online`)
+          traefik.http.routers.jellyfin.entrypoints: websecure
+          traefik.http.routers.jellyfin.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - jellyfin
+  become: true
