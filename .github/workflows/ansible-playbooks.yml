@@ -25,7 +25,9 @@ jobs:
         run: |
           sudo apt update
           sudo apt install -y ansible
-
+      - name: Create Ansible Vault Password File
+        run: |
+          echo "${{ secrets.VAULT_PASSWORD }}" >> .vault_pass
       - name: Run PFNASS Container Playbook
         env:
           ANSIBLE_USER: ${{ secrets.PFNASS_USER }}
@@ -34,5 +36,8 @@ jobs:
           TAGS: ${{ inputs.TAGS }}
           PRIVATE_KEY: private_key.pem
         run: |
-          echo "${{ secrets.VAULT_PASSWORD }}" >> .vault_pass.txt
-          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml --vault-password-file=.vault_pass.txt
+          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml --vault-password-file=.vault_pass
+      - name: Remove VAULT_PASSWORD
+        if: always()
+        run: |
+          rm -f .vault_pass
