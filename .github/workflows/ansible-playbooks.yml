@@ -34,4 +34,5 @@ jobs:
           TAGS: ${{ inputs.TAGS }}
           PRIVATE_KEY: private_key.pem
         run: |
-          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml
+          echo "${{ secrets.VAULT_PASSWORD }}" >> .vault_pass.txt
+          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml --vault-password-file=.vault_pass.txt
