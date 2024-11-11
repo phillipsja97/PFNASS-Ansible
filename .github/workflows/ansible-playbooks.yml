@@ -3,10 +3,6 @@ name: Run Ansible playbooks
 on:
   workflow_dispatch:
     inputs:
-      USER:
-        description: 'User to run in playbook'
-        type: string
-        required: true
       TAGS:
         description: 'Tags to run'
         type: string
@@ -24,16 +20,18 @@ jobs:
         run: |
           echo "${{ secrets.SSH_KEY }}" > private_key.pem
           chmod 600 private_key.pem
-          
       - name: Install Ansible
         shell: bash
         run: |
           sudo apt update
           sudo apt install -y ansible
 
-      - name: Run Ansible Playbook
+      - name: Run PFNASS Container Playbook
         env:
-          ANSIBLE_USER: ${{ inputs.USER }}
-          ANSIBLE_HOST_KEY_CHECKING: False
+          ANSIBLE_USER: ${{ secrets.PFNASS_USER }}
+          ANSIBLE_HOST_KEY_CHECKING: false
+          ANSIBLE_PORT: ${{ secrets.PFNASS_PORT }}
+          TAGS: ${{ inputs.TAGS }}
+          PRIVATE_KEY: private_key.pem
         run: |
-          ansible-playbook --inventory inventory/inventory playbooks/playbook.yml --private-key private_key.pem --user ${{ inputs.USER }} --tags="{{ inputs.TAGS }}"
+          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml"
