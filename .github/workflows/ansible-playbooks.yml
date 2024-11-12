@@ -7,15 +7,12 @@ on:
         description: 'Tags to run'
         type: string
         required: true
-      VAULT_PASS:
-        description: Password for Ansible Vault
-        type: string
-        required: true
 
 jobs:
   deploy:
     name: Deploy Ansible Playbook
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -31,7 +28,7 @@ jobs:
           sudo apt install -y ansible
       - name: Create Ansible Vault Password File
         run: |
-          echo ${{ inputs.VAULT_PASS }} >> .vault_pass
+          echo ${{ secrets.VAULT_PASS }} >> .vault_pass
       - name: Run PFNASS Container Playbook
         env:
           ANSIBLE_USER: ${{ secrets.PFNASS_USER }}
