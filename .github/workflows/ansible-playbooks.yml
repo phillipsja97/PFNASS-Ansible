@@ -37,7 +37,15 @@ jobs:
           TAGS: ${{ inputs.TAGS }}
           PRIVATE_KEY: private_key.pem
         run: |
-          ansible-playbook -i pfnass-ansible/inventory pfnass-ansible/playbooks/build_docker_containers_playbook.yml --vault-password-file=.vault_pass
+          ansible-playbook \
+          -i pfnass-ansible/inventory \
+          pfnass-ansible/playbooks/build_docker_containers_playbook.yml \
+          -u $ANSIBLE_USER \
+          -e ANSIBLE_PORT=$ANSIBLE_PORT \
+          --tags=$TAGS \
+          --private-key $PRIVATE_KEY \
+          --vault-password-file=.vault_pass
+
       - name: Remove VAULT_PASSWORD
         if: always()
         run: |
