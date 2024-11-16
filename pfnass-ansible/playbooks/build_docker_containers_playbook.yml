@@ -12,7 +12,7 @@
           - name: "{{ proxy_network }}"
         restart_policy: unless-stopped
         ports:
-          - "{{ postgres_ports }}"
+          - "{{ postgres_db_ports }}"
         env:
           POSTGRES_PASSWORD: "{{ postgres_password }}"
           POSTGRES_USER: "{{ postgres_user }}"
@@ -136,7 +136,7 @@
         image: lscr.io/linuxserver/jackett:latest
         keep_volumes: true
         networks:
-          - name: "{{ PLEX_NETWORK }}"
+          - name: "{{ plex_network }}"
         pull: false
         restart_policy: unless-stopped
         env:
@@ -147,13 +147,18 @@
           - "{{ jackett_path }}/config:/config"
         ports:
           "{{ jackett_port }}"
+      tags:
+        - docker
+        - container
+        - jackett
+        - plex-media-server
     - name: Start Overseerr Docker Container
       community.docker.docker_container:
         name: overseerr
         image: lscr.io/linuxserver/overseerr:latest
         keep_volumes: true
         networks:
-          - name: "{{ PLEX_NETWORK }}"
+          - name: "{{ plex_network }}"
         pull: false
         restart_policy: unless-stopped
         env:
@@ -164,6 +169,11 @@
           - "{{ overseerr_path }}/config:/config"
         ports:
           "{{ overseerr_ports }}"
+      tags:
+        - docker
+        - container
+        - overseerr
+        - plex-media-server
     - name: Start PD_ZURG Docker Container
       community.docker.docker_container:
         name: PD_ZURG
@@ -183,18 +193,18 @@
         # Zurg Optional Settings
           ZURG_LOG_LEVEL: INFO
         # ZURG_VERSION=v0.9.2-hotfix.4
-          ZURG_UPDATE: "true"
+          # ZURG_UPDATE: "true"
           PLEX_REFRESH: "true"
-          PLEX_MOUNT_DIR: "{{ plex_media_path }}/config:data:rshared"
+          PLEX_MOUNT_DIR: "{{ plex_media_path }}/config"
           ZURG_USER: "{{ zurg_user }}"
           ZURG_PASS: "{{ zurg_pass }}"
           ZURG_PORT: "{{ zurg_port }}"
         ## Rclone Required Settings
-          RCLONE_MOUNT_NAME: pd_zurg
+          RCLONE_MOUNT_NAME: rclone
         # Rclone Optional Settings See rclone docs for full list
         # NFS_ENABLED=true
         # NFS_PORT=8000
-          RCLONE_LOG_LEVEL: DEBUG
+          RCLONE_LOG_LEVEL: INFO
         # RCLONE_CACHE_DIR=/cache
         # RCLONE_DIR_CACHE_TIME=10s
         # RCLONE_VFS_CACHE_MODE=full
@@ -212,7 +222,7 @@
           PLEX_TOKEN: "{{ plex_token }}"
           PLEX_ADDRESS: "{{ plex_address }}"
           ## Plex Debrid Optional Settings
-          PD_UPDATE: "false"
+          # PD_UPDATE: "false"
           SHOW_MENU: "false"
           SEERR_API_KEY: "{{ seerr_api_key }}"
           SEERR_ADDRESS: "{{ seerr_address }}"
@@ -236,7 +246,7 @@
           ## Location for Zurg AllDebrid active configuration -- when supported by Zurg
           # - "{{ plex_media_path }}/AD:/zurg/AD
           ## Location for rclone mount to host
-          - "{{ plex_media_path }}/config:/data:shared"
+          - "{{ plex_media_path }}/config:/data:rshared"
         devices:
           - /dev/fuse:/dev/fuse:rwm
         capabilities:
@@ -244,6 +254,11 @@
         security_opts:
           - apparmor:unconfined
           - no-new-privileges
+      tags:
+        - docker
+        - container
+        - pd-zurg
+        - plex-media-server
     - name: Start Plex Docker Container
       community.docker.docker_container:
         name: plex
@@ -263,6 +278,11 @@
           - "{{ plex_media_path }}/config:/rclone"
         ports:
           "{{ plex_port }}"
+      tags:
+        - docker
+        - container
+        - plex
+        - plex-media-server
     - name: Run Mealie Container
       community.docker.docker_container:
         name: mealie
@@ -273,8 +293,8 @@
         pull: false
         restart_policy: unless-stopped
         env:
-          USER_UID: "{{ user_uid }}"
-          USER_GID: "{{ user_gid }}"
+          USER_UID: "{{ puid }}"
+          USER_GID: "{{ pgid }}"
           ALLOW_SIGNUP: "false"
           TZ: America/Chicago
           BASE_URL: "{{ base_url }}"
@@ -330,4 +350,61 @@
         - docker
         - container
         - jellyfin
+    - name: Start Dashy Container
+      community.docker.docker_container:
+        name: dashy
+        image: lissy93/dashy
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          NODE_ENV: production
+        volumes:
+          - "{{ dashy_path }}/config.yml:/app/user-data/conf.yml"
+        ports:
+          "{{ dashy_port }}"
+        # healthcheck:
+        #   test: ['CMD', 'node', '/app/services/healthcheck']
+        #   interval: 1m30s
+        #   timeout: 10s
+        #   retries: 3
+        #   start_period: 40s
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.dash.rule: Host(`dash.pfnass.online`)
+          traefik.http.routers.dash.entrypoints: websecure
+          traefik.http.routers.dash.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - dashy
+    - name: Start PaperlessNGX Container
+      community.docker.docker_container:
+        name: PaperlessNGX
+        image: lscr.io/linuxserver/paperless-ngx:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ proxy_network }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          TZ: America/Chicago
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        volumes:
+          - "{{ paperless_path }}/config:/config"
+          - "{{ paperless_path }}/data:/data"
+        ports:
+          "{{ paperless_port }}"
+        labels:
+          traefik.enable: "true"
+          traefik.http.routers.paperless.rule: Host(`paperless.pfnass.online`)
+          traefik.http.routers.paperless.entrypoints: websecure
+          traefik.http.routers.paperless.tls.certresolver: myresolver
+      tags:
+        - docker
+        - container
+        - paperless
   become: true
