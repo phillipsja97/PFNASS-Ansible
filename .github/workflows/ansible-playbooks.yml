@@ -51,7 +51,7 @@ jobs:
           -u ${{ secrets.ANSIBLE_USER }} \
           -e ANSIBLE_PORT=${{ secrets.PFNASS_PORT }} \
           --tags=${{ inputs.TAGS }} \
-          --private-key ${{ secrets.SSH_KEY }} \
+          --private-key ${{ env.PRIVATE_KEY }} \
           --vault-password-file=.vault_pass
 
       - name: Remove VAULT_PASSWORD
