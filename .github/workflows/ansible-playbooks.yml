@@ -47,11 +47,11 @@ jobs:
         run: |
           ansible-playbook \
           -i pfnass-ansible/inventory \
-          pfnass-ansible/playbooks/build_docker_$PLAYBOOK_playbook.yml \
-          -u $ANSIBLE_USER \
-          -e ANSIBLE_PORT=$ANSIBLE_PORT \
-          --tags=$TAGS \
-          --private-key $PRIVATE_KEY \
+          pfnass-ansible/playbooks/build_docker_${{ inputs.PLAYBOOK }}_playbook.yml \
+          -u ${{ secrets.ANSIBLE_USER }} \
+          -e ANSIBLE_PORT=${{ secrets.PFNASS_PORT }} \
+          --tags=${{ inputs.TAGS }} \
+          --private-key ${{ secrets.SSH_KEY }} \
           --vault-password-file=.vault_pass
 
       - name: Remove VAULT_PASSWORD
