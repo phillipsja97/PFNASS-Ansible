@@ -36,24 +36,45 @@ jobs:
         run: |
           echo ${{ secrets.VAULT_PASSWORD }} >> .vault_pass
 
-      - name: Run PFNASS Container Playbook
-        env:
-          ANSIBLE_USER: ${{ secrets.PFNASS_USER }}
-          ANSIBLE_HOST_KEY_CHECKING: false
-          ANSIBLE_PORT: ${{ secrets.PFNASS_PORT }}
-          TAGS: ${{ inputs.TAGS }}
-          PLAYBOOK: ${{ inputs.PLAYBOOK }}
-          PRIVATE_KEY: private_key.pem
-        run: |
-          ansible-playbook \
-          -i pfnass-ansible/inventory \
-          pfnass-ansible/playbooks/build_docker_${{ inputs.PLAYBOOK }}_playbook.yml \
-          -e ANSIBLE_PORT=${{ secrets.PFNASS_PORT }} \
-          --ssh-common-args='-p ${{ secrets.PFNASS_PORT }}' \
-          -u ${{ secrets.ANSIBLE_USER }} \
-          --tags=${{ inputs.TAGS }} \
-          --private-key ${{ env.PRIVATE_KEY }} \
-          --vault-password-file=.vault_pass
+      # - name: Run PFNASS Container Playbook
+      #   env:
+      #     ANSIBLE_USER: ${{ secrets.PFNASS_USER }}
+      #     ANSIBLE_HOST_KEY_CHECKING: false
+      #     ANSIBLE_PORT: ${{ secrets.PFNASS_PORT }}
+      #     TAGS: ${{ inputs.TAGS }}
+      #     PLAYBOOK: ${{ inputs.PLAYBOOK }}
+      #     PRIVATE_KEY: private_key.pem
+      #   run: |
+      #     ansible-playbook \
+      #     -i pfnass-ansible/inventory \
+      #     pfnass-ansible/playbooks/build_docker_${{ inputs.PLAYBOOK }}_playbook.yml \
+      #     -e ANSIBLE_PORT=${{ secrets.PFNASS_PORT }} \
+      #     --ssh-common-args='-p ${{ secrets.PFNASS_PORT }}' \
+      #     -u ${{ secrets.ANSIBLE_USER }} \
+      #     --tags=${{ inputs.TAGS }} \
+      #     --private-key ${{ env.PRIVATE_KEY }} \
+      #     --vault-password-file=.vault_pass
+    
+      - name: Run playbook
+        uses: dawidd6/action-ansible-playbook@v3
+        with:
+          # Required, playbook filepath
+          playbook: build_docker_${{ inputs.PLAYBOOK }}_playbook.yml
+          # Optional, directory where playbooks live
+          directory: pfnass-ansible/playbooks
+          # Optional, SSH private key
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          # Optional, literal inventory file contents
+          inventory: |
+            [pfnass]
+            192.168.1.189
+            
+            [pfnass:vars]
+            ansible_python_interpreter=/usr/bin/python3
+            ansible_port=${{ secrets.PFNASS_PORT }}
+            ansible_user=${{  secrets.PFNASS_USER }}
+          # Optional, encrypted vault password
+          vault_password: ${{secrets.VAULT_PASSWORD}}
 
       - name: Remove VAULT_PASSWORD
         if: always()
