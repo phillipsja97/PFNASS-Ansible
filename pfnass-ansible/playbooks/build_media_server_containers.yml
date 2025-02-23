@@ -1,0 +1,177 @@
+--- 
+- name: Build All Docker Networks
+  hosts: pfnass
+  vars_files:
+    - "./vars/media_server"
+  tasks:
+    - name: Start Zurg Container
+      community.docker.docker_container:
+        name: zurg
+        image: ghcr.io/debridmediamanager/zurg-testing:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ plex_media_server }}"
+        pull: true
+        restart_policy: unless-stopped
+        ports:
+          "{{ zurg_ports }}"
+        volumes:
+          - "{{ zurg_path }}/scripts/plex_update.sh:/app/plex_update.sh"
+          - "{{ zurg_path }}/config.yml:/app/config.yml"
+          - "{{ zurg_path }}/data:/app/data"
+      tags:
+        - zurg
+        - media-server
+
+    - name: Start Rclone Container
+      community.docker.docker_container:
+        name: rclone
+        image: rclone/rclone:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ plex_media_server  }}"
+        pull: true
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+        volumes:
+          - "{{ rclone_mount_path }}:/data:rshared"
+          - "{{ rclone_config_path }}:/config/rclone/rclone.conf"
+        capabilities:
+          - SYS_ADMIN
+        security_opts:
+          - apparmor:unconfined
+        devices:
+          - /dev/fuse:/dev/fuse:rwm
+        command: "mount zurg: /data --allow-other --allow-non-empty --uid=1026 --gid=100 --dir-cache-time 10s --vfs-cache-mode full"
+      tags:
+        - rclone
+        - media-server
+
+    - name: Start Prowlarr Container
+      community.docker.docker_container:
+        name: prowlarr
+        image: ghcr.io/hotio/prowlarr:release
+        keep_volumes: true
+        hostname: prowlarr
+        restart_policy: unless-stopped
+        networks:
+          - name: "{{ plex_media_server }}"
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        ports:
+          "{{ prowlarr_ports }}"
+        volumes:
+          - "{{ prowlarr_config_path }}:/config"
+          - "{{ media_mount_path }}:/mnt"
+      tags:
+        - prowlarr
+        - media-server
+
+    - name: Start Sonarr Container
+      community.docker.docker_container:
+        name: sonarr
+        image: ghcr.io/hotio/sonarr:release
+        restart_policy: unless-stopped
+        hostname: sonarr
+        networks:
+          - name: "{{ plex_media_server  }}"
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        ports:
+          "{{ sonarr_ports }}"
+        volumes:
+          - "{{ sonarr_config_path }}:/config"
+          - "{{ blackhole_root_path }}:/scripts"
+          - "{{ media_mount_path }}:/mnt"
+      tags:
+        - sonarr
+        - media-server
+
+    - name: Start radarr Container
+      community.docker.docker_container:
+        name: radarr
+        image: ghcr.io/hotio/radarr:release
+        restart_policy: unless-stopped
+        hostname: radarr
+        networks:
+          - name: "{{ plex_media_server  }}"
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        ports:
+          "{{ radarr_ports }}"
+        volumes:
+          - "{{ radarr_config_path }}:/config"
+          - "{{ blackhole_root_path }}:/scripts"
+          - "{{ media_mount_path }}:/mnt"
+      tags:
+        - sonarr
+        - media-server
+
+    - name: Start Overseerr Docker Container
+      community.docker.docker_container:
+        name: overseerr
+        image: lscr.io/linuxserver/overseerr:latest
+        keep_volumes: true
+        networks:
+          - name: "{{ plex_media_server }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+        volumes:
+          - "{{ overseerr_path }}/config:/config"
+        ports:
+          "{{ overseerr_ports }}"
+      tags:
+        - overseerr
+        - media-server
+
+    - name: Start Plex Container
+      community.docker.docker_container:
+        name: plex
+        image: ghcr.io/linuxserver/plex
+        networks:
+          - name: "{{ plex_media_server }}"
+        pull: false
+        restart_policy: unless-stopped
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+          TZ: America/Chicago
+          VERSION: docker
+        volumes:
+          - /dev/shm:/transcode
+          - "{{ plex_media_path }}:/config"
+          - "{{ blackhole_root_path }}:/scripts"
+          - "{{ media_mount_path }}:/mnt"
+        ports:
+          "{{ plex_ports }}"
+      tags:
+        - plex
+        - media-server
+    - name: Start Autoscan Container
+      community.docker.docker_container:
+        name: autoscan
+        image: saltydk/autoscan:latest
+        hostname: autoscan
+        restart_policy: unless-stopped
+        networks:
+          - name: "{{ plex_media_server }}"
+        env:
+          PUID: "{{ puid }}"
+          PGID: "{{ pgid }}"
+        volumes:
+          - "{{ autoscan_path }}:/config"
+          - "{{ media_mount_path }}:/mnt"
+      tags:
+        - autoscan
+        - media-server
+  become: true

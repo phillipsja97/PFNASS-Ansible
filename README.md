@@ -6,7 +6,8 @@
 
 # To run pfnass-ansible from root project directory
 
-`ansible-playbook -u root -i pfnass-ansible/inventory.yml pfnass-ansible/playbook.yml`
+`ansible-playbook -i inventory playbooks/build_docker_containers_playbook.yml --vault-password-file=.{password_file_name/path} --tags="{tag_example}"`
+OR
 
 # Optionally, can also run only specific tags, or multiple tags
 
