@@ -48,8 +48,9 @@ jobs:
           ansible-playbook \
           -i pfnass-ansible/inventory \
           pfnass-ansible/playbooks/build_docker_${{ inputs.PLAYBOOK }}_playbook.yml \
-          -u ${{ secrets.ANSIBLE_USER }} \
           -e ANSIBLE_PORT=${{ secrets.PFNASS_PORT }} \
+          --ssh-common-args='-p ${{ secrets.PFNASS_PORT }}' \
+          -u ${{ secrets.ANSIBLE_USER }} \
           --tags=${{ inputs.TAGS }} \
           --private-key ${{ env.PRIVATE_KEY }} \
           --vault-password-file=.vault_pass
