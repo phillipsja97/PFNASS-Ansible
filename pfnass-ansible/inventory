@@ -9,9 +9,15 @@
 
 [pfnass:vars]
 ansible_python_interpreter=/usr/bin/python3
+ansible_port=97
+ansible_user=phillips-admin
 
 [pfrps:vars]
 ansible_python_interpreter=/usr/bin/python3
+ansible_port=97
+ansible_user=phillips-admin
 
 [pf_router:vars]
 ansible_python_interpreter=/usr/bin/python3
+ansible_port=97
+ansible_user=phillips-admin

@@ -1,0 +1,96 @@
+- name: Build All Docker Containers
+  hosts: pfnass
+  tasks:
+    - name: Start Overseerr Docker Container
+      community.docker.docker_container:
+          name: overseerr
+          image: lscr.io/linuxserver/overseerr:latest
+          keep_volumes: true
+          networks:
+            - name: plex-bridge-network
+          pull: false
+          restart_policy: unless-stopped
+          env:
+            PUID: "1000"
+            PGID: "1000"
+            TZ: America/Chicago
+          volumes:
+            - "/volume1/docker/Overseerr/config:/config"
+          ports:
+            - 5055:5055
+      tags:
+        - riven
+        - overseerr
+
+    - name: Build and Start Riven-Frontend
+      community.docker.docker_container:
+          name: riven-frontend
+          image: spoked/riven-frontend:latest
+          restart_policy: unless-stopped
+          networks:
+            - name: plex-bridge-network
+          ports:
+            "3000:3000"
+          tty: true
+          env:
+            PUID: "1000"
+            PGID: "1000"
+            TZ: America/Chicago
+            ORIGIN: http://192.168.1.189:3000 # set to the url or ip where the frontend is hosted
+            BACKEND_URL: http://riven:8080
+            DIALECT: postgres
+            DATABASE_URL: postgres://postgres:postgres@riven-db/riven
+      tags:
+        - riven
+        - frontend
+
+    - name: Build and Start Riven-Backend
+      community.docker.docker_container:
+          name: riven-backend
+          image: spoked/riven:latest
+          restart_policy: unless-stopped
+          networks:
+            - name: plex-bridge-network
+          ports:
+            "8080:8080"
+          tty: true
+          env:
+            PUID: "1000"
+            PGID: "1000"
+            TZ: America/Chicago
+            RIVEN_FORCE_ENV: "true"
+            RIVEN_DATABASE_HOST: postgresql+psycopg2://postgres:postgres@riven-db/riven
+          healthcheck:
+            test: curl -s http://riven:8080 >/dev/null || exit 1
+            interval: 30s
+            timeout: 10s
+            retries: 5
+          volumes:
+            - /volume1/docker/riven/backend/data:/riven/data
+            - /volume1/docker/mnt:/mnt
+      tags:
+        - riven
+        - riven-backend
+
+    - name: Build and Start Riven Database
+      community.docker.docker_container:
+          name: riven-postgres
+          image: postgres:17.0-alpine3.20
+          restart_policy: unless-stopped
+          networks:
+            - name: plex-bridge-network
+          env:
+            PGDATA: /var/lib/postgresql/data/pgdata
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: riven
+          volumes:
+            - /volume1/docker/riven/posgresdb:/var/lib/postgresql/data/pgdata
+          healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+      tags:
+        - riven
+        - riven-db
